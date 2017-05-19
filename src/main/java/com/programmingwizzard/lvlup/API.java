@@ -1,6 +1,7 @@
 package com.programmingwizzard.lvlup;
 
 import com.programmingwizzard.lvlup.account.Account;
+import com.programmingwizzard.lvlup.balance.Balance;
 import com.programmingwizzard.lvlup.retrofit.RetrofitConstant;
 import com.programmingwizzard.lvlup.token.Token;
 import com.programmingwizzard.lvlup.token.TokenRefresher;
@@ -9,6 +10,7 @@ import okhttp3.Request;
 import retrofit2.Call;
 
 import java.io.IOException;
+import java.util.List;
 
 public class API {
 
@@ -61,6 +63,15 @@ public class API {
         Call<Account> accountCall = this.service.account();
         try {
             return accountCall.execute().body();
+        } catch (IOException ex) {
+            throw new APIException(ex);
+        }
+    }
+
+    public List<Balance> balance() {
+        Call<List<Balance>> balanceCall = this.service.balance();
+        try {
+            return balanceCall.execute().body();
         } catch (IOException ex) {
             throw new APIException(ex);
         }
