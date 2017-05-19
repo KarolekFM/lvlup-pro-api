@@ -5,8 +5,10 @@ import com.programmingwizzard.lvlup.balance.Balance;
 import com.programmingwizzard.lvlup.retrofit.RetrofitConstant;
 import com.programmingwizzard.lvlup.token.Token;
 import com.programmingwizzard.lvlup.token.TokenRefresher;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.Response;
 import retrofit2.Call;
 
 import java.io.IOException;
@@ -19,30 +21,7 @@ public class API {
 
     API(Endpoint endpoint, String login, String password) {
         this.refresher = new TokenRefresher(this, login, password);
-        OkHttpClient client = new OkHttpClient.Builder()
-                                      .addInterceptor(chain -> {
-                                          Request request = chain.request();
-                                          if (request != null) {
-                                              if (this.refresher.isPresent()) {
-                                                  Token token = refresher.refresh();
-                                                  if (token == null) {
-                                                      return chain.proceed(request);
-                                                  }
-                                                  String content = token.getContent();
-                                                  if (content == null) {
-                                                      return chain.proceed(request);
-                                                  }
-                                                  Request newRequest = request
-                                                                               .newBuilder()
-                                                                               .addHeader("Authorization",
-                                                                                       "Bearer " + content)
-                                                                               .build();
-                                                  return chain.proceed(newRequest);
-                                              }
-                                              return chain.proceed(request);
-                                          }
-                                          throw new APIException("Request can not be null!");
-                                      }).build();
+        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(this::makeResponse).build();
 
         RetrofitConstant retrofit = new RetrofitConstant(endpoint.getUrl(), client);
         this.service = retrofit.create(APIService.class);
@@ -75,6 +54,29 @@ public class API {
         } catch (IOException ex) {
             throw new APIException(ex);
         }
+    }
+
+    private Response makeResponse(Interceptor.Chain chain) throws IOException {
+        Request request = chain.request();
+        if (request != null) {
+            if (this.refresher.isPresent()) {
+                Token token = refresher.refresh();
+                if (token == null) {
+                    return chain.proceed(request);
+                }
+                String content = token.getContent();
+                if (content == null) {
+                    return chain.proceed(request);
+                }
+                Request newRequest = request
+                                             .newBuilder()
+                                             .addHeader("Authorization", "Bearer " + content)
+                                             .build();
+                return chain.proceed(newRequest);
+            }
+            return chain.proceed(request);
+        }
+        throw new APIException("Request can not be null!");
     }
 
     protected enum Endpoint {
