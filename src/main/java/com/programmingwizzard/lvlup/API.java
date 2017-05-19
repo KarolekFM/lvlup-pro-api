@@ -1,5 +1,6 @@
 package com.programmingwizzard.lvlup;
 
+import com.programmingwizzard.lvlup.account.Account;
 import com.programmingwizzard.lvlup.retrofit.RetrofitConstant;
 import com.programmingwizzard.lvlup.token.Token;
 import com.programmingwizzard.lvlup.token.TokenRefresher;
@@ -43,13 +44,23 @@ public class API {
 
         RetrofitConstant retrofit = new RetrofitConstant(endpoint.getUrl(), client);
         this.service = retrofit.create(APIService.class);
+
+        this.refresher.refresh();
     }
 
     public Token login() {
         Call<Token> tokenCall = this.service.login(this.refresher.getLogin(), this.refresher.getPassword());
         try {
-            Token token = tokenCall.execute().body();
-            return token;
+            return tokenCall.execute().body();
+        } catch (IOException ex) {
+            throw new APIException(ex);
+        }
+    }
+
+    public Account account() {
+        Call<Account> accountCall = this.service.account();
+        try {
+            return accountCall.execute().body();
         } catch (IOException ex) {
             throw new APIException(ex);
         }
